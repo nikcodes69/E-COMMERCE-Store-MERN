@@ -11,7 +11,6 @@ export const protectRoute = async (req, res, next) => {
   
       const decoded = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET);
       console.log('Decoded token payload:', decoded);
-      console.log('ID type:', typeof decoded.userId);
       
       const userId = new mongoose.Types.ObjectId(decoded.userId);
       console.log('Converted ObjectId:', userId);
