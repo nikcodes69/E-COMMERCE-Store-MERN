@@ -6,6 +6,7 @@ const generateTokens = ({ userId }) => {
     const accessToken = jwt.sign({ userId }, process.env.ACCESS_TOKEN_SECRET, {
         expiresIn: '15m'
     })
+    console.log("Token payload should contain:", { userId });
 
     const refreshToken = jwt.sign({ userId }, process.env.REFRESH_TOKEN_SECRET, {
         expiresIn: '7d'
@@ -63,7 +64,8 @@ export const signup = async (req,res)=>{
         res.status(201).json({user:{
             _id: user._id,
             name: user.name,
-            email: user.email,
+            role: user.role,
+            email: user.email
         },message: 'User Created Successfully'});
     }
     }
@@ -74,16 +76,16 @@ export const signup = async (req,res)=>{
     }
 }
 
-export const login = async (req,res)=>{
+export const login = async (req,res)=>{ 
     try{
         const {email,password} = req.body;
         const user = await User.findOne({email});
 
         if(user && (await user.comparePassword(password))){
-            const {accessToken,refreshToken} = generateTokens(user._id);
+            const {accessToken,refreshToken} = generateTokens({ userId: user._id });
              
             await storeRefreshToken(user._id,refreshToken)
-            setCookies(res,accessToken,refreshToken)
+            setCookies(res,accessToken, refreshToken)
 
             res.json({
                 _id: user._id,
@@ -120,3 +122,36 @@ export const logout = async (req,res)=>{
     }
 }
 
+export const refreshToken = async(req,res)=>{
+    try{
+        const refreshToken = req.cookies.refreshToken;
+        console.log(refreshToken);
+
+        if(!refreshToken){
+            return res.status(401).json({message:'NO refresh token provided'});
+        }
+
+        const decoded = jwt.verify(refreshToken,process.env.REFRESH_TOKEN_SECRET);
+        const storedToken = await redis.get(`refresh_token:${decoded.userId}`)
+
+        if(storedToken !== refreshToken){
+            return res.status(401).json({message: 'INvalid refresh token'});
+        }
+
+        const accessToken = jwt.sign({userId: decoded.userId},process.env.ACCESS_TOKEN_SECRET,{expiresIn: '15m'});
+
+        res.cookie('accessToken', accessToken, {
+            httpOnly: true, //prevents XSS attack, cross site scripting attacks
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict', //prevents CSRF attack, cross site request forgery
+            maxAge: 15*60*1000 //15mins
+        })
+
+        res.json({message: 'Token Refreshed Successfully'});
+    }
+    catch(error){
+        console.log('Error in refreshToken controller',error.message);
+    }
+}
+
+ 
