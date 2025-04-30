@@ -82,7 +82,7 @@ export const deleteProduct = async (req,res)=>{
                 console.log('Error deleting image from cloudinary',error.message);
             }
         }
-        await Product findByIdAndDelete(req.params.id);
+        await Product.findByIdAndDelete(req.params.id);
 
         res.json({message: 'Product deleted succesfully'});
 
