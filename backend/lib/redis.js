@@ -3,5 +3,8 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-export const redis = new Redis(process.env.UPSTASH_REDIS_URL);
-await redis.set('foo1', 'bar1');
+export const redis = new Redis(process.env.UPSTASH_REDIS_URL,{
+    tls: { rejectUnauthorized: false }
+});
+
+await redis.set('foo2', 'bar2');
