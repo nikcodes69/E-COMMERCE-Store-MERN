@@ -56,6 +56,8 @@ export const createProduct = async(req,res)=>{
             category
         })
         res.status(201).json(product);
+        console.log('Product created');
+        
     }
     catch(error){
         console.log('Error in createProduct Controller',error.message);
